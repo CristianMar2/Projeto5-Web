@@ -5,7 +5,7 @@ const display = document.getElementById('display');
 const buttons = document.querySelectorAll('.button');
 
 // Adiciona um ouvinte de evento para capturar entradas do teclado
-document.addEventListener('keydown', handleKeyboardInput);
+document.addEventListener('keydown', entradaDoTeclado);
 
 // Adiciona ouvintes de eventos de clique a cada botão
 buttons.forEach(button => {
@@ -46,8 +46,7 @@ function deletarCaractere() {
 // Calcula o quadrado do número exibido no display
 function quadrado() {
   try {
-    // Avalia a expressão atual no display e calcula o quadrado
-    const result = Math.pow(eval(display.value), 2);
+    const result = Math.pow(parseFloat(display.value), 2);
     display.value = result; 
   } catch (error) {
     display.value = 'Error';
@@ -57,8 +56,9 @@ function quadrado() {
 // Calcula o resultado da expressão exibida no display
 function calcularResultado() {
   try {
-    // Usa eval para avaliar a expressão matemática
-    const result = eval(display.value);
+    const expressaoInfixa = display.value;
+    const expressaoPosfixa = infixaParaPosFixa(expressaoInfixa);
+    const result = calcularPosfixa(expressaoPosfixa);
     display.value = result; 
   } catch (error) {
     display.value = 'Error';
@@ -66,7 +66,7 @@ function calcularResultado() {
 }
 
 // Captura e manipula entradas do teclado
-function handleKeyboardInput(event) {
+function entradaDoTeclado(event) {
   const key = event.key;
 
   // Adiciona números e operadores válidos ao display
@@ -80,4 +80,80 @@ function handleKeyboardInput(event) {
   } else if (key === 'Escape') {
     limparDisplay();
   }
+}
+
+// Converte a expressão infixa para pós-fixa
+function infixaParaPosFixa(expression) {
+  const precedence = {
+    '+': 1,
+    '-': 1,
+    '*': 2,
+    '/': 2,
+  };
+
+  const stack = [];
+  const output = [];
+  const tokens = expression.match(/(\d+(\.\d+)?|[+\-*/()])/g);
+
+  tokens.forEach(token => {
+    if (!isNaN(token)) {
+      // Números vão diretamente para a saída
+      output.push(token);
+    } else if (token === '(') {
+      stack.push(token);
+    } else if (token === ')') {
+      while (stack.length > 0 && stack[stack.length - 1] !== '(') {
+        output.push(stack.pop());
+      }
+      stack.pop(); // Remove '('
+    } else {
+      // Operadores
+      while (
+        stack.length > 0 &&
+        precedence[token] <= precedence[stack[stack.length - 1]]
+      ) {
+        output.push(stack.pop());
+      }
+      stack.push(token);
+    }
+  });
+
+  while (stack.length > 0) {
+    output.push(stack.pop());
+  }
+
+  return output;
+}
+
+// Avalia a expressão pós-fixa
+function calcularPosfixa(postfix) {
+  const stack = [];
+
+  postfix.forEach(token => {
+    if (!isNaN(token)) {
+      stack.push(parseFloat(token));
+    } else {
+      const b = stack.pop();
+      const a = stack.pop();
+
+      switch (token) {
+        case '+':
+          stack.push(a + b);
+          break;
+        case '-':
+          stack.push(a - b);
+          break;
+        case '*':
+          stack.push(a * b);
+          break;
+        case '/':
+          stack.push(a / b);
+          break;
+        default:
+          throw new Error('Invalid operator');
+      }
+    }
+  });
+
+  return stack.pop();
 }
